@@ -27,8 +27,9 @@ type FeelingModel struct {
 }
 
 type ToDo struct {
-	Id    int
-	Title string
+	Id        int
+	Title     string
+	Smalltask string
 }
 
 type ToDoModel struct {

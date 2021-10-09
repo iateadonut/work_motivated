@@ -19,16 +19,15 @@ import (
 )
 
 type app struct {
-	// c_timer       *time.Timer
-	// timer_channel chan bool
 	r       *bufio.Reader
 	todos   []models.ToDo
 	chosen  models.ToDo
 	db      *sql.DB
 	sleep   func(time.Duration)
 	c_timer bool
-	//sleep_timer   func(time.Duration)
-	db_dir string
+	db_dir  string
+	pprompt promptui.Prompt
+	pselect promptui.Select
 }
 
 func sleep(d time.Duration) {
@@ -129,10 +128,13 @@ func distracted(app *app) {
 
 	fmt.Println("What is the smallest action you can take right now to get going?")
 
-	_, err := app.r.ReadString('\n')
+	smallest_task, err := app.r.ReadString('\n')
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(smallest_task)
+
+	app.chosen.Smalltask = strings.Trim(smallest_task, "\n")
 
 	fmt.Println("Set a timer for 25 minutes.  Then hit enter.")
 	fmt.Println("Try to work for the duration of the timer without distraction.")
@@ -155,7 +157,6 @@ func distracted(app *app) {
 	// fmt.Println("Sit and work.")
 	// fmt.Println()
 
-	//if input was "ok", meaning you got distracted
 	//When you try to start this task, do you feel:
 	//bored
 	//overwhelmed
@@ -164,7 +165,7 @@ func distracted(app *app) {
 	//tired
 
 	//are you working on another, more important task now?
-	//are you bored?  - what's the smallest possible thing you can do to get started?
+
 	//do you need to take a shower?  trim  your hair?
 	//let's try to see the big picture
 	//
@@ -208,11 +209,8 @@ func distracted(app *app) {
 
 func run(app *app) {
 
-	prompt := promptui.Prompt{
-		Label: "Are you motivated? [Y/N]",
-		//Validate: validate,
-	}
-	user_input, err := prompt.Run()
+	app.pprompt.Label = "Are you motivated? [Y/N]"
+	user_input, err := app.pprompt.Run()
 
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
@@ -223,11 +221,8 @@ func run(app *app) {
 		motivate(app)
 	}
 
-	prompt = promptui.Prompt{
-		Label: "Are you thirsty? [Y/N]",
-		//Validate: validate,
-	}
-	user_input, err = prompt.Run()
+	app.pprompt.Label = "Are you thirsty? [Y/N]"
+	user_input, err = app.pprompt.Run()
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		return
@@ -288,6 +283,18 @@ func run(app *app) {
 	}
 }
 
+//This function only demonstrates how to mock multiple inputs on a single function.  It is used in TestMock().
+func mock(p promptui.Prompt) string {
+	p.Label = "[Y/N]"
+	user_input, err := p.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+	}
+	user_input2, err := p.Run()
+
+	return user_input + user_input2
+}
+
 func main() {
 
 	var home_data_dir string
@@ -308,6 +315,7 @@ func main() {
 	}
 
 	app := &app{
+		pprompt: promptui.Prompt{},
 		db_dir:  db_dir,
 		todos:   []models.ToDo{},
 		sleep:   sleep,
