@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strings"
 )
 
 func ConnectDB(db_dir string) *sql.DB {
@@ -26,7 +27,7 @@ type FeelingModel struct {
 }
 
 type ToDo struct {
-	id    int
+	Id    int
 	Title string
 }
 
@@ -47,6 +48,9 @@ func (c *FeelingModel) CreateTable() {
 }
 
 func (c *FeelingModel) Insert(dtype string, description string) {
+	if strings.EqualFold("\n", description) {
+		return
+	}
 	c.CreateTable()
 	statement, err := c.DB.Prepare("INSERT INTO feelings (Type, Description) VALUES (?, ?)")
 	if err != nil {
