@@ -38,12 +38,15 @@ func sleep_timer(d time.Duration) {
 	time.Sleep(d)
 }
 
-func choose_one(app *app) models.ToDo {
+//chooses one
+func choose_one(app *app) *app {
 
 	items := make([]string, 0, len(app.todos))
 	for _, t := range app.todos {
 		items = append(items, strings.Trim(t.Title, "\n"))
 	}
+
+	items = append(items, "* add another item to this list")
 
 	prompt := promptui.Select{
 		Label: "Choose one thing that you should get started on",
@@ -55,6 +58,12 @@ func choose_one(app *app) models.ToDo {
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
+	}
+
+	if to_do == "* add another item to this list" {
+		//fmt.Println()
+		addToDos(app)
+		return choose_one(app)
 	}
 
 	fmt.Println()
@@ -74,10 +83,10 @@ func choose_one(app *app) models.ToDo {
 
 	for _, td := range app.todos {
 		if td.Title == to_do {
-			return td
+			app.chosen = td
 		}
 	}
-	return app.todos[0]
+	return app
 
 }
 
@@ -113,6 +122,8 @@ func timesUp(d time.Duration) {
 	fmt.Println("Make sure to get out of your seat and take 5 when you see this!")
 	fmt.Println("Do NOT entertain yourself on your computer during your break.")
 	return
+	//choice: i'm finished with my break
+	//i'm going to keep working without a break
 }
 
 func timer(app *app, d time.Duration) {
@@ -124,6 +135,7 @@ func timer(app *app, d time.Duration) {
 	}
 }
 
+// BUG(distraced):  typing 'done' after distracted() is run does not remove the 'todo' from the list of todos
 func distracted(app *app) {
 
 	fmt.Println("What is the smallest action you can take right now to get going?")
@@ -136,10 +148,12 @@ func distracted(app *app) {
 
 	app.chosen.Smalltask = strings.Trim(smallest_task, "\n")
 
-	fmt.Println("Set a timer for 25 minutes.  Then hit enter.")
-	fmt.Println("Try to work for the duration of the timer without distraction.")
-	_, _ = app.r.ReadString('\n')
-	go timer(app, time.Duration(time.Minute*25))
+	if false == app.c_timer {
+		fmt.Println("Set a timer for 25 minutes.  Then hit enter.")
+		fmt.Println("Try to work for the duration of the timer without distraction.")
+		_, _ = app.r.ReadString('\n')
+		go timer(app, time.Duration(time.Minute*25))
+	}
 
 	fmt.Println()
 	fmt.Println("Go do it!")
@@ -207,6 +221,22 @@ func distracted(app *app) {
 
 }
 
+func addToDos(app *app) {
+	fmt.Println("Add them line by line. Hit ENTER on an empty line to finish.")
+	for {
+		user_input, err := app.r.ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+		}
+		if strings.EqualFold(user_input, "\n") {
+			break
+		}
+		todo := models.ToDo{Title: strings.Trim(user_input, "\n")}
+		app.todos = append(app.todos, todo)
+	}
+	return
+}
+
 func run(app *app) {
 
 	app.pprompt.Label = "Are you motivated? [Y/N]"
@@ -237,22 +267,13 @@ func run(app *app) {
 	_, _ = app.r.ReadString('\n')
 
 	fmt.Println("Check your email or notes, and list the things you want to (or should) do.")
-	for {
-		user_input, err = app.r.ReadString('\n')
-		if err != nil {
-			fmt.Println(err)
-		}
-		if strings.EqualFold(user_input, "\n") {
-			break
-		}
-		todo := models.ToDo{Title: strings.Trim(user_input, "\n")}
-		app.todos = append(app.todos, todo)
-	}
+
+	addToDos(app)
 
 	for {
 
 		//fmt.Print("\a")
-		app.chosen = choose_one(app)
+		choose_one(app)
 		//fmt.Printf("%#v", app.chosen)
 
 	InputLoop:
