@@ -50,6 +50,56 @@ func TestMock(t *testing.T) {
 	}
 }
 
+func TestAddToDos(t *testing.T) {
+	todos := []models.ToDo{}
+
+	i1 := "to do 1\n"
+	i2 := "to do 2\n"
+	i3 := "\n"
+
+	b := bytes.NewBuffer([]byte(i1))
+	b.WriteString(i2)
+	b.WriteString(i3)
+
+	app1 := &app{
+		todos: todos,
+		r:     bufio.NewReader(b),
+	}
+
+	if len(app1.todos) != 0 {
+		t.Errorf("to dos not set up correctly")
+	}
+
+	addToDos(app1)
+
+	if len(app1.todos) != 2 {
+		t.Errorf("to dos not added")
+	}
+
+	if "to do 1" != app1.todos[0].Title {
+		t.Errorf("title not parsed correctly: %#v", app1.todos[0].Title)
+	}
+
+	//TEST WINDOWS
+	i1 = "to do 3\r\n"
+	i3 = "\r\n"
+
+	b = bytes.NewBuffer([]byte(i1))
+	b.WriteString(i3)
+
+	app2 := &app{
+		todos: todos,
+		r:     bufio.NewReader(b),
+	}
+
+	addToDos(app2)
+
+	if "to do 3" != app2.todos[0].Title {
+		t.Errorf("title not parsed correctly: %#v", app2.todos[0].Title)
+	}
+
+}
+
 func TestDistracted(t *testing.T) {
 
 	// db_dir, err := os.MkdirTemp("testdata", "*")

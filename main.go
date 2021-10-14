@@ -201,6 +201,7 @@ func distracted(app *app) {
 	// 	fmt.Println(err)
 	// }
 
+	//bored
 	//What can you do pertinent to your goals/self-improvement if you get your work done quickly?
 	//What can you do that you enjoy if you get your work done quickly?
 
@@ -231,7 +232,10 @@ func addToDos(app *app) {
 		if strings.EqualFold(user_input, "\n") {
 			break
 		}
-		todo := models.ToDo{Title: strings.Trim(user_input, "\n")}
+		if strings.EqualFold(user_input, "\r\n") {
+			break
+		}
+		todo := models.ToDo{Title: strings.Trim(user_input, "\r\n")}
 		app.todos = append(app.todos, todo)
 	}
 	return
@@ -291,7 +295,7 @@ func run(app *app) {
 						app.todos = append(app.todos[0:idx], app.todos[idx+1:]...)
 					}
 				}
-				fmt.Println("Congratulate or reward yourself.")
+				fmt.Println("Congratulate yourself.")
 				fmt.Println()
 				app.sleep(time.Second * 7)
 				break InputLoop
