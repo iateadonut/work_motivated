@@ -60,6 +60,16 @@ func (c *FeelingModel) Insert(dtype string, description string) {
 	statement.Exec(dtype, description)
 }
 
+func (c *FeelingModel) GetRandom( /*dtype string, description string*/ ) Feeling {
+
+	feeling := Feeling{}
+	err := c.DB.QueryRow("SELECT Type, Description FROM feelings ORDER BY RANDOM() LIMIT 1").Scan(&feeling.Type, &feeling.Description)
+	if err != nil {
+		fmt.Println(fmt.Errorf(err.Error()))
+	}
+	return feeling
+}
+
 func (c *ToDoModel) CreateTable() {
 	statement, err := c.DB.Prepare("CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, Title TEXT)")
 	if err != nil {
@@ -74,7 +84,7 @@ func (c *ToDoModel) CreateTable() {
 
 func (c *ToDoModel) Insert(title string) {
 	c.CreateTable()
-	statement, err := c.DB.Prepare("INSERT INTO feelings (Title) VALUES (?)")
+	statement, err := c.DB.Prepare("INSERT INTO todos (Title) VALUES (?)")
 	if err != nil {
 		println(fmt.Errorf(err.Error()))
 	}

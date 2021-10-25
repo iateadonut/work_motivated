@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,15 +20,16 @@ import (
 )
 
 type app struct {
-	r       *bufio.Reader
-	todos   []models.ToDo
-	chosen  models.ToDo
-	db      *sql.DB
-	sleep   func(time.Duration)
-	c_timer bool
-	db_dir  string
-	pprompt promptui.Prompt
-	pselect promptui.Select
+	r         *bufio.Reader
+	todos     []models.ToDo
+	task_list []string
+	chosen    models.ToDo
+	db        *sql.DB
+	sleep     func(time.Duration)
+	c_timer   bool
+	db_dir    string
+	pprompt   promptui.Prompt
+	pselect   promptui.Select
 }
 
 func sleep(d time.Duration) {
@@ -94,6 +96,7 @@ func choose_one(app *app) *app {
 	}
 
 	items = append(items, "* add another item to this list")
+	items = append(items, "* finish for the day")
 
 	prompt := promptui.Select{
 		Label: "Choose one thing that you should get started on",
@@ -113,6 +116,14 @@ func choose_one(app *app) *app {
 		return choose_one(app)
 	}
 
+	if to_do == "* finish for the day" {
+
+		//What is one thing you can remember about today that will make you work better tomorrow?
+		//e.g. It felt great to finish early, so make sure to get started early!
+
+		os.Exit(1)
+	}
+
 	fmt.Println()
 
 	for _, td := range app.todos {
@@ -122,6 +133,19 @@ func choose_one(app *app) *app {
 	}
 	return app
 
+}
+
+func showOneFeeling(app *app) {
+	f := models.FeelingModel{DB: app.db}
+
+	feeling := f.GetRandom()
+	//fmt.Printf("%#v", feeling)
+
+	fmt.Println()
+	fmt.Println("Read your previous answer back to yourself:")
+	fmt.Println(feeling.Type)
+	fmt.Println(feeling.Description)
+	app.sleep(time.Second * 15)
 }
 
 func motivate(app *app) {
@@ -176,7 +200,7 @@ func anxious(app *app) error {
 	//jot down some of the things you are distracted by.
 	//things you want to look up; games you want to play; chores you think you have to do
 
-	//save these for after work!  you may find that you don't actually want to do them, but that they were a technique for distraction.
+	//save these for after work!  you may find that you don't actually want to do them, but that they were a technique for procrastination.
 
 	//think about things you *actually* like to do; you get to do them if you finish your work
 
@@ -187,41 +211,113 @@ func anxious(app *app) error {
 
 func bored(app *app) error {
 
-	//if a particular website distracts you, 'forget it' in your history, or block it.
+	fmt.Println("If a particular website distracts you, 'forget it' in your history, or block it.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
 
-	//tell me what you find interesting about smallest task
-	//was there anything that made you feel good when doing the last task?  did you figure something out, or fix a problem, prevent a problem, or even just identify a problem?
+	fmt.Println("Tell me what you find interesting about " + app.chosen.Title)
+	user_input, _ := app.r.ReadString('\n')
+	fmt.Println(user_input)
 
-	//let's try to see the big picture
-	//
-	//skill acquisition? //so good they can't ignore you
-	//flow?
-	//produce results?
+	fmt.Println()
+	fmt.Println("Was there anything that made you feel good when doing the last task?  Did you figure something out, or fix a problem, prevent a problem, or even just identify a problem?")
+	user_input, _ = app.r.ReadString('\n')
 
-	//What can you do pertinent to your goals/self-improvement if you get your work done quickly?
-	//What can you do that you enjoy if you get your work done quickly?
+	fmt.Println()
+	fmt.Println("Let's try to see the big picture.")
+	app.sleep(time.Second * 1)
+	fmt.Println("Name one skill that you will acquire/improve as you do this task.")
+	//book: So Good They Can't Ignore You
+	user_input, _ = app.r.ReadString('\n')
+
+	fmt.Println()
+	fmt.Println("What is one result that will come of doing this task?")
+	user_input, _ = app.r.ReadString('\n')
+
+	fmt.Println()
+	fmt.Println("What can you do pertinent to your goals/self-improvement if you get your work done quickly?")
+	fmt.Println("Or what exciting work can you move onto when you get this work done?")
+	user_input, _ = app.r.ReadString('\n')
+
+	fmt.Println()
+	fmt.Println("What can you do later that you enjoy if you focus now on this task?")
+	user_input, _ = app.r.ReadString('\n')
+
+	fmt.Println()
+	fmt.Println("Repeat to yourself:")
+	quotes := []string{
+		"After working undistracted for some time, I may acheive a flow state, with all of its benefits",
+		"My sense of boredom will pass after just a few minutes of working on " + app.chosen.Title,
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(quotes))
+	quote := quotes[randomIndex]
+	fmt.Println(quote)
+
+	app.sleep(time.Second * 6)
 
 	return nil
 }
 
 func icky(app *app) error {
 
-	//clean your desk
+	fmt.Println("Clean your desk.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
 
-	//do you need to take a shower?  trim  your hair?
+	fmt.Println("Brush your teeth or otherwise tend to your oral health.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
+
+	fmt.Println("Trim your facial hair if you need and are able.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
+
+	fmt.Println("Put on chap stick if needed.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
+
+	app.pprompt.Label = "Do you need to take a shower? [Y/N]"
+	user_input, err := app.pprompt.Run()
+
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return err
+	}
+
+	if strings.EqualFold(user_input, "y") {
+		fmt.Println("Take a quick cold shower if you can.")
+		fmt.Println("Or remember to schedule a shower asap.")
+		fmt.Println("Hit ENTER when complete")
+		_, _ = app.r.ReadString('\n')
+	}
 
 	return nil
 }
 
 func overwhelmed(app *app) error {
 
-	//clean your desk
+	fmt.Println("Clean your desk.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
 
-	//clean your computer desktop; close all unnecessary programs
+	fmt.Println("Close *all* windows & tabs not related to the task at hand.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
 
 	//do you think daily, taking time for yourself with no tv, handphone, etc, just to sit down, or lie down, or pace and think for at least 10 minutes?
 
-	//if a particular website distracts you, 'forget it' in your history, or block it.
+	fmt.Println("If a particular website distracts you, 'forget it' in your history, or block it.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
+
+	fmt.Println("Turn off any background noise.")
+	fmt.Println("If you need earplugs, put them in.")
+	fmt.Println("If you really think you need background noise, put on some 'white noise' or NON-lyrical music. Do not put on any background noise with any words at all.")
+	fmt.Println("Hit ENTER when complete")
+	_, _ = app.r.ReadString('\n')
+
+	//box breathing
 
 	// fmt.Println()
 	// fmt.Println("Sit and think.")
@@ -261,7 +357,7 @@ func tired(app *app) error {
 	_, _ = app.r.ReadString('\n')
 
 	fmt.Println("Repeat to yourself:")
-	fmt.Println("When I am tired and work with focus, after a little while, I find that work invigorates me.")
+	fmt.Println("When I am tired and work with focus, I find that work invigorates me after a little while.")
 	fmt.Println()
 	app.sleep(time.Second * 5)
 
@@ -278,14 +374,33 @@ func distracted(app *app) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(smallest_task)
+	//fmt.Println(smallest_task)
 
-	app.chosen.Smalltask = strings.Trim(smallest_task, "\n")
+	app.chosen.Smalltask = strings.Trim(smallest_task, "\r\n")
 
 	if false == app.c_timer {
 		fmt.Println("Set a timer for 25 minutes.  Then hit enter.")
 		_, _ = app.r.ReadString('\n')
-		fmt.Println("Try to work for the duration of the timer without distraction.")
+
+		fmt.Println("What can you reasonably get done in 25 minutes?")
+		fmt.Println("Hit ENTER on an empty line to finish.")
+		app.task_list = nil
+		for {
+			user_input, err := app.r.ReadString('\n')
+			if err != nil {
+				fmt.Println(err)
+			}
+			app.task_list = append(app.task_list, strings.Trim(user_input, "\r\n"))
+			if strings.EqualFold(user_input, "\n") {
+				break
+			}
+			if strings.EqualFold(user_input, "\r\n") {
+				break
+			}
+		}
+
+		//fmt.Println("Try to work for the duration of the timer without distraction.")
+		fmt.Println("Do your best to finish your list before the timer ends.")
 		go timer(app, time.Duration(time.Minute*25))
 	} else {
 		prompt := promptui.Select{
@@ -318,7 +433,10 @@ func distracted(app *app) error {
 	}
 
 	fmt.Println()
-	fmt.Println("Go do it!")
+
+	// fmt.Println(app.chosen.Title)
+	// fmt.Println(app.chosen.Smalltask)
+	// fmt.Println()
 
 	//Are you working by hours or tasks?
 	//if hours
@@ -359,20 +477,30 @@ func addToDos(app *app) {
 
 func goDoIt(app *app) (string, error) {
 	fmt.Println("Repeat to yourself:")
-	fmt.Println("I will work with intention.")
+	//pick a random phrase
+	intentions := []string{
+		"I work with intention.",
+		"I am proud of my work.",
+		"I do all things purposefully.",
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(intentions))
+	intention := intentions[randomIndex]
+
+	fmt.Println(intention)
 	fmt.Println()
 	app.sleep(time.Second * 5)
 
-	fmt.Println("Go do it!")
-	app.sleep(time.Second * 1)
+	// fmt.Println("Go do it!")
+	// app.sleep(time.Second * 1)
 
-	fmt.Println("When you finish, select 'Finished'.")
-	fmt.Println("If you get distracted, select 'Distracted'.")
+	// fmt.Println("When you finish, select 'Finished'.")
+	// fmt.Println("If you get distracted, select 'Distracted'.")
 
 	fmt.Println()
 	//fmt.Println(to_do)
 
-	app.pselect.Label = "Finished?"
+	app.pselect.Label = "How is it going with '" + app.chosen.Title + "'?"
 	app.pselect.Items = []string{"Finished", "Distracted", "Change Tasks"}
 	_, user_input, err := app.pselect.Run()
 	return user_input, err
@@ -391,6 +519,8 @@ func run(app *app) {
 
 	if strings.EqualFold(user_input, "n") {
 		motivate(app)
+	} else {
+		showOneFeeling(app)
 	}
 
 	app.pprompt.Label = "Are you thirsty? [Y/N]"
