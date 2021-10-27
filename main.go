@@ -523,8 +523,8 @@ func run(app *app) {
 
 	f := models.FeelingModel{DB: app.db}
 	feeling := f.GetRandom("end_of_day")
-	fmt.Printf("%#v", feeling)
 	if feeling.Description != "" {
+		fmt.Println()
 		fmt.Println(feeling.Description)
 		app.sleep(time.Second * 3)
 	}
