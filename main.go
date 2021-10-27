@@ -118,8 +118,14 @@ func choose_one(app *app) *app {
 
 	if to_do == "* finish for the day" {
 
-		//What is one thing you can remember about today that will make you work better tomorrow?
-		//e.g. It felt great to finish early, so make sure to get started early!
+		fmt.Println("What is one thing about today that will make you work better tomorrow?")
+		fmt.Println("e.g. It felt great to finish early, so make sure to get started early!")
+
+		user_input, _ := app.r.ReadString('\n')
+		if !strings.EqualFold("\n", user_input) {
+			f := models.FeelingModel{DB: app.db}
+			f.Insert("end_of_day", user_input)
+		}
 
 		os.Exit(1)
 	}
@@ -138,14 +144,15 @@ func choose_one(app *app) *app {
 func showOneFeeling(app *app) {
 	f := models.FeelingModel{DB: app.db}
 
-	feeling := f.GetRandom()
+	feeling := f.GetRandom("")
 	//fmt.Printf("%#v", feeling)
-
-	fmt.Println()
-	fmt.Println("Read your previous answer back to yourself:")
-	fmt.Println(feeling.Type)
-	fmt.Println(feeling.Description)
-	app.sleep(time.Second * 15)
+	if feeling.Description != "" {
+		fmt.Println()
+		fmt.Println("Read your previous answer back to yourself:")
+		fmt.Println(feeling.Type)
+		fmt.Println(feeling.Description)
+		app.sleep(time.Second * 7)
+	}
 }
 
 func motivate(app *app) {
@@ -345,7 +352,7 @@ func tired(app *app) error {
 		fmt.Println("Remind yourself:")
 		fmt.Println("If I complete my tasks quickly, I will be able to lie down for a nap.")
 		fmt.Println()
-		app.sleep(time.Second * 5)
+		app.sleep(time.Second * 3)
 	}
 
 	fmt.Println("Drink some water.")
@@ -434,6 +441,12 @@ func distracted(app *app) error {
 
 	fmt.Println()
 
+	//atomic habits
+	//list all your habits
+	//i will time, date, location, habit
+	//habit stacking
+	// - after habit, i will new habit
+
 	// fmt.Println(app.chosen.Title)
 	// fmt.Println(app.chosen.Smalltask)
 	// fmt.Println()
@@ -489,7 +502,7 @@ func goDoIt(app *app) (string, error) {
 
 	fmt.Println(intention)
 	fmt.Println()
-	app.sleep(time.Second * 5)
+	app.sleep(time.Second * 2)
 
 	// fmt.Println("Go do it!")
 	// app.sleep(time.Second * 1)
@@ -507,6 +520,14 @@ func goDoIt(app *app) (string, error) {
 }
 
 func run(app *app) {
+
+	f := models.FeelingModel{DB: app.db}
+	feeling := f.GetRandom("end_of_day")
+	fmt.Printf("%#v", feeling)
+	if feeling.Description != "" {
+		fmt.Println(feeling.Description)
+		app.sleep(time.Second * 3)
+	}
 
 	app.pprompt.Label = "Are you motivated? [Y/N]"
 	user_input, err := app.pprompt.Run()

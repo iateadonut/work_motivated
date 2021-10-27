@@ -60,11 +60,18 @@ func (c *FeelingModel) Insert(dtype string, description string) {
 	statement.Exec(dtype, description)
 }
 
-func (c *FeelingModel) GetRandom( /*dtype string, description string*/ ) Feeling {
+//BUG: no such table: feelings, no rows in result set ERRORS SHOWING WHEN TRYING TO INSERT INTO A NON-EXISTANT TABLE
+func (c *FeelingModel) GetRandom(dtype string) Feeling {
 
 	feeling := Feeling{}
-	err := c.DB.QueryRow("SELECT Type, Description FROM feelings ORDER BY RANDOM() LIMIT 1").Scan(&feeling.Type, &feeling.Description)
+	where := ""
+	if dtype != "" {
+		where = "WHERE Type = '" + dtype + "'"
+	}
+	query := "SELECT Type, Description FROM feelings " + where + " ORDER BY RANDOM() LIMIT 1"
+	err := c.DB.QueryRow(query).Scan(&feeling.Type, &feeling.Description)
 	if err != nil {
+		//CHANGE THIS TO NOT SHOW ERROR sql: no rows in result set
 		fmt.Println(fmt.Errorf(err.Error()))
 	}
 	return feeling
