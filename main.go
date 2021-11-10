@@ -175,11 +175,15 @@ func motivate(app *app) {
 			fmt.Println("Read it back to yourself:")
 			fmt.Println(user_input)
 
-			app.sleep(time.Second * 15)
+			app.sleep(time.Second * 12)
+		} else {
+			feeling := f.GetRandom(field_name)
+			if feeling.Description != "" {
+				fmt.Println(feeling.Description)
+				app.sleep(time.Second * 12)
+			}
 		}
-
 	}
-
 }
 
 func timesUp(d time.Duration) {
@@ -202,7 +206,7 @@ func timer(app *app, d time.Duration) {
 
 func anxious(app *app) error {
 
-	//are you working on another, more important task now?
+	//are you distracted by another, more important task now?
 
 	//jot down some of the things you are distracted by.
 	//things you want to look up; games you want to play; chores you think you have to do
@@ -212,6 +216,16 @@ func anxious(app *app) error {
 	//think about things you *actually* like to do; you get to do them if you finish your work
 
 	//Repeat to yourself: I cannot fail; if I learned something I have succeeded.
+
+	// Every time I deal with an intrusive thought, I am paving the way for further happiness – I accept some discomfort on that journey.  Effectively dealing with intrusive thoughts makes me realize I can effectively deal with any other situation with the proper research and mindset.
+	//Healing is a lifelong process.  Every bit of healing will bring more and more relief and improved life circumstances.  I have the intention and desire to make any incremental step I can, knowing that this is a lifelong process, and each step should be celebrated.  With each intrusive thought, I’m excited that an opportunity for healing has arrived.
+	//When I experience shame, I acknowledge it, and I ask it, “Shame, what do you need from me?”  I wonder, “Who is it that shames me?”
+	// (1) When I am having an intrusive thought, I label it, thinking, “this is an intrusive thought that has caught my attention because of how it feels.”
+	// (2) I realize they are only thoughts and are not actually what they represent.
+	// (3) I actively allow the thought to be there.  I welcome the thought as an opportunity to rewire my brain.
+	// (4) I focus on sensory inputs and recognize their ephemeral nature, and realize that thoughts have that same nature.
+	// (5)  I relax and allow time to pass.  When a thought has a strong emotion tied to it, I take the time to observe and ‘digest’ that emotion.
+	// (6)  I proceed back to my work.
 
 	return nil
 }
@@ -302,6 +316,21 @@ func icky(app *app) error {
 	return nil
 }
 
+func boxbreathing(app *app) {
+	fmt.Println("This is the box breathing exercise for calming down.")
+	app.sleep(time.Second * 2)
+	for k := 0; k < 6; k++ {
+		for _, message := range []string{"Breath in.", "Hold.", "Breath out.", "Hold."} {
+			for i := 0; i < 4; i++ {
+				fmt.Printf("\r%s %x", message, i)
+				app.sleep(time.Second * 1)
+			}
+			fmt.Printf("\r               ")
+		}
+	}
+	fmt.Println()
+}
+
 func overwhelmed(app *app) error {
 
 	fmt.Println("Clean your desk.")
@@ -324,7 +353,7 @@ func overwhelmed(app *app) error {
 	fmt.Println("Hit ENTER when complete")
 	_, _ = app.r.ReadString('\n')
 
-	//box breathing
+	boxbreathing(app)
 
 	// fmt.Println()
 	// fmt.Println("Sit and think.")
@@ -375,15 +404,16 @@ func distracted(app *app) error {
 
 	//are you still working on smallest_task?
 
-	fmt.Println("What is the smallest action you can take right now to get going?")
+	if app.chosen.Smalltask == "" {
+		fmt.Println("What is the smallest action you can take right now to get going?")
 
-	smallest_task, err := app.r.ReadString('\n')
-	if err != nil {
-		return err
+		smallest_task, err := app.r.ReadString('\n')
+		if err != nil {
+			return err
+		}
+
+		app.chosen.Smalltask = strings.Trim(smallest_task, "\r\n")
 	}
-	//fmt.Println(smallest_task)
-
-	app.chosen.Smalltask = strings.Trim(smallest_task, "\r\n")
 
 	if false == app.c_timer {
 		fmt.Println("Set a timer for 25 minutes.  Then hit enter.")
@@ -526,7 +556,7 @@ func run(app *app) {
 	if feeling.Description != "" {
 		fmt.Println()
 		fmt.Println(feeling.Description)
-		app.sleep(time.Second * 3)
+		app.sleep(time.Second * 5)
 	}
 
 	app.pprompt.Label = "Are you motivated? [Y/N]"
